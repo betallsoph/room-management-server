@@ -1,17 +1,28 @@
 {
-  "name": "room-server",
+  "name": "room-management-server",
   "version": "1.0.0",
-  "description": "",
+  "description": "Apartment/Room Rental Management System API",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "node --test"
   },
-  "keywords": [],
+  "keywords": [
+    "apartment-management",
+    "rental-management",
+    "property-management",
+    "api",
+    "nodejs",
+    "express",
+    "mongodb"
+  ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.5",

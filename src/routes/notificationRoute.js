@@ -4,28 +4,87 @@ const { authenticateToken, authorize } = require('../middlewares/auth');
 
 const router = express.Router();
 
-// [Admin] Tạo & gửi thông báo
+/** @swagger
+ * /api/notifications:
+ *   post:
+ *     tags: [Notifications]
+ *     summary: Gửi thông báo
+ *     security: [{bearerAuth: []}]
+ *     responses: {201: {description: Gửi thành công}}
+ */
 router.post('/', authenticateToken, authorize(['admin', 'staff']), notificationController.sendNotification);
 
-// [Admin] Xem danh sách thông báo đã gửi
+/** @swagger
+ * /api/notifications/sent/list:
+ *   get:
+ *     tags: [Notifications]
+ *     summary: Danh sách đã gửi
+ *     security: [{bearerAuth: []}]
+ *     responses: {200: {description: Danh sách}}
+ */
 router.get('/sent/list', authenticateToken, authorize(['admin', 'staff']), notificationController.listSentNotifications);
 
-// [Tenant] Xem thông báo của mình - PHẢI ĐẶT TRƯỚC /:notificationId
+/** @swagger
+ * /api/notifications/my/list:
+ *   get:
+ *     tags: [Notifications]
+ *     summary: Thông báo của tôi
+ *     security: [{bearerAuth: []}]
+ *     responses: {200: {description: Danh sách thông báo}}
+ */
 router.get('/my/list', authenticateToken, notificationController.getTenantNotifications);
 
-// [User] Xem số thông báo chưa đọc - PHẢI ĐẶT TRƯỚC /:notificationId
+/** @swagger
+ * /api/notifications/unread/count:
+ *   get:
+ *     tags: [Notifications]
+ *     summary: Số thông báo chưa đọc
+ *     security: [{bearerAuth: []}]
+ *     responses: {200: {description: Số lượng}}
+ */
 router.get('/unread/count', authenticateToken, notificationController.getUnreadNotificationCount);
 
-// [Tenant] Xem thông báo chi tiết
+/** @swagger
+ * /api/notifications/{notificationId}:
+ *   get:
+ *     tags: [Notifications]
+ *     summary: Chi tiết thông báo
+ *     security: [{bearerAuth: []}]
+ *     parameters: [{in: path, name: notificationId, required: true, schema: {type: string}}]
+ *     responses: {200: {description: Chi tiết}}
+ */
 router.get('/:notificationId', authenticateToken, notificationController.getNotificationDetails);
 
-// [Tenant] Đánh dấu thông báo là đã đọc
+/** @swagger
+ * /api/notifications/{notificationId}/read:
+ *   put:
+ *     tags: [Notifications]
+ *     summary: Đánh dấu đã đọc
+ *     security: [{bearerAuth: []}]
+ *     parameters: [{in: path, name: notificationId, required: true, schema: {type: string}}]
+ *     responses: {200: {description: Đánh dấu thành công}}
+ */
 router.put('/:notificationId/read', authenticateToken, notificationController.markAsRead);
 
-// [Tenant] Đánh dấu tất cả thông báo là đã đọc
+/** @swagger
+ * /api/notifications/my/read-all:
+ *   put:
+ *     tags: [Notifications]
+ *     summary: Đánh dấu tất cả đã đọc
+ *     security: [{bearerAuth: []}]
+ *     responses: {200: {description: Đánh dấu thành công}}
+ */
 router.put('/my/read-all', authenticateToken, notificationController.markAllAsRead);
 
-// [Tenant] Xóa thông báo
+/** @swagger
+ * /api/notifications/{notificationId}:
+ *   delete:
+ *     tags: [Notifications]
+ *     summary: Xóa thông báo
+ *     security: [{bearerAuth: []}]
+ *     parameters: [{in: path, name: notificationId, required: true, schema: {type: string}}]
+ *     responses: {200: {description: Xóa thành công}}
+ */
 router.delete('/:notificationId', authenticateToken, notificationController.deleteNotification);
 
 module.exports = router;

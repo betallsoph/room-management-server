@@ -4,28 +4,89 @@ const { authenticateToken, authorize } = require('../middlewares/auth');
 
 const router = express.Router();
 
-// [Tenant] Upload giấy tờ
+/** @swagger
+ * /api/documents:
+ *   post:
+ *     tags: [Documents]
+ *     summary: Upload tài liệu
+ *     security: [{bearerAuth: []}]
+ *     responses: {201: {description: Upload thành công}}
+ */
 router.post('/', authenticateToken, authorize(['tenant']), documentController.uploadDocument);
 
-// [Admin] Xem danh sách tài liệu
+/** @swagger
+ * /api/documents:
+ *   get:
+ *     tags: [Documents]
+ *     summary: Danh sách tài liệu
+ *     security: [{bearerAuth: []}]
+ *     responses: {200: {description: Danh sách}}
+ */
 router.get('/', authenticateToken, authorize(['admin', 'staff']), documentController.listDocuments);
 
-// [Tenant] Xem danh sách tài liệu của mình - PHẢI ĐẶT TRƯỚC /:documentId
+/** @swagger
+ * /api/documents/my/list:
+ *   get:
+ *     tags: [Documents]
+ *     summary: Tài liệu của tôi
+ *     security: [{bearerAuth: []}]
+ *     responses: {200: {description: Danh sách tài liệu}}
+ */
 router.get('/my/list', authenticateToken, authorize(['tenant']), documentController.getTenantDocuments);
 
-// [Tenant] Download tài liệu - PHẢI ĐẶT TRƯỚC /:documentId
+/** @swagger
+ * /api/documents/my/{documentId}/download:
+ *   get:
+ *     tags: [Documents]
+ *     summary: Download tài liệu
+ *     security: [{bearerAuth: []}]
+ *     parameters: [{in: path, name: documentId, required: true, schema: {type: string}}]
+ *     responses: {200: {description: File download}}
+ */
 router.get('/my/:documentId/download', authenticateToken, authorize(['tenant']), documentController.downloadDocument);
 
-// [Admin] Chi tiết tài liệu
+/** @swagger
+ * /api/documents/{documentId}:
+ *   get:
+ *     tags: [Documents]
+ *     summary: Chi tiết tài liệu
+ *     security: [{bearerAuth: []}]
+ *     parameters: [{in: path, name: documentId, required: true, schema: {type: string}}]
+ *     responses: {200: {description: Chi tiết}}
+ */
 router.get('/:documentId', authenticateToken, documentController.getDocumentDetails);
 
-// [Admin] Lưu trữ tài liệu
+/** @swagger
+ * /api/documents/{documentId}/archive:
+ *   put:
+ *     tags: [Documents]
+ *     summary: Lưu trữ tài liệu
+ *     security: [{bearerAuth: []}]
+ *     parameters: [{in: path, name: documentId, required: true, schema: {type: string}}]
+ *     responses: {200: {description: Lưu trữ thành công}}
+ */
 router.put('/:documentId/archive', authenticateToken, authorize(['admin', 'staff']), documentController.archiveDocument);
 
-// [Admin] Xóa tài liệu
+/** @swagger
+ * /api/documents/{documentId}:
+ *   delete:
+ *     tags: [Documents]
+ *     summary: Xóa tài liệu
+ *     security: [{bearerAuth: []}]
+ *     parameters: [{in: path, name: documentId, required: true, schema: {type: string}}]
+ *     responses: {200: {description: Xóa thành công}}
+ */
 router.delete('/:documentId', authenticateToken, authorize(['admin']), documentController.deleteDocument);
 
-// [Admin] Chia sẻ tài liệu cho khách
+/** @swagger
+ * /api/documents/{documentId}/share:
+ *   put:
+ *     tags: [Documents]
+ *     summary: Chia sẻ tài liệu
+ *     security: [{bearerAuth: []}]
+ *     parameters: [{in: path, name: documentId, required: true, schema: {type: string}}]
+ *     responses: {200: {description: Chia sẻ thành công}}
+ */
 router.put('/:documentId/share', authenticateToken, authorize(['admin', 'staff']), documentController.shareDocument);
 
 module.exports = router;
