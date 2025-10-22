@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 
@@ -20,6 +21,16 @@ const messageRoutes = require('./routes/messageRoute');
 
 const app = express();
 
+// CORS Configuration for Vite Frontend
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Vite default port
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
