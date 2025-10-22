@@ -16,7 +16,7 @@ const router = express.Router();
  *       201:
  *         description: Tạo hóa đơn thành công
  */
-router.post('/', authenticateToken, authorize(['admin', 'staff']), invoiceController.createInvoice);
+router.post('/', authenticateToken, authorize(['admin']), invoiceController.createInvoice);
 
 /**
  * @swagger
@@ -30,7 +30,7 @@ router.post('/', authenticateToken, authorize(['admin', 'staff']), invoiceContro
  *       200:
  *         description: Danh sách hóa đơn
  */
-router.get('/', authenticateToken, authorize(['admin', 'staff']), invoiceController.listInvoices);
+router.get('/', authenticateToken, authorize(['admin']), invoiceController.listInvoices);
 
 /**
  * @swagger
@@ -118,6 +118,6 @@ router.get('/:invoiceId', authenticateToken, invoiceController.getInvoiceDetails
  *       200:
  *         description: Xác nhận thành công
  */
-router.put('/:invoiceId/confirm-payment', authenticateToken, authorize(['admin', 'staff']), invoiceController.confirmPayment);
+router.put('/:invoiceId/confirm-payment', authenticateToken, authorize(['admin']), invoiceController.confirmPayment);
 
 module.exports = router;

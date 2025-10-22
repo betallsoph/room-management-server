@@ -12,7 +12,7 @@ const router = express.Router();
  *     security: [{bearerAuth: []}]
  *     responses: {201: {description: Tạo thành công}}
  */
-router.post('/', authenticateToken, authorize(['admin', 'staff']), tenantController.createTenant);
+router.post('/', authenticateToken, authorize(['admin']), tenantController.createTenant);
 
 /** @swagger
  * /api/tenants:
@@ -22,7 +22,7 @@ router.post('/', authenticateToken, authorize(['admin', 'staff']), tenantControl
  *     security: [{bearerAuth: []}]
  *     responses: {200: {description: Danh sách}}
  */
-router.get('/', authenticateToken, authorize(['admin', 'staff']), tenantController.listTenants);
+router.get('/', authenticateToken, authorize(['admin']), tenantController.listTenants);
 
 /** @swagger
  * /api/tenants/my-profile:
@@ -43,7 +43,7 @@ router.get('/my-profile', authenticateToken, authorize(['tenant']), tenantContro
  *     parameters: [{in: path, name: tenantId, required: true, schema: {type: string}}]
  *     responses: {200: {description: Chi tiết}}
  */
-router.get('/:tenantId', authenticateToken, authorize(['admin', 'staff']), tenantController.getTenantDetails);
+router.get('/:tenantId', authenticateToken, authorize(['admin']), tenantController.getTenantDetails);
 
 /** @swagger
  * /api/tenants/{tenantId}:
@@ -54,7 +54,7 @@ router.get('/:tenantId', authenticateToken, authorize(['admin', 'staff']), tenan
  *     parameters: [{in: path, name: tenantId, required: true, schema: {type: string}}]
  *     responses: {200: {description: Cập nhật thành công}}
  */
-router.put('/:tenantId', authenticateToken, authorize(['admin', 'staff']), tenantController.updateTenant);
+router.put('/:tenantId', authenticateToken, authorize(['admin']), tenantController.updateTenant);
 
 /** @swagger
  * /api/tenants/my-profile/emergency-contact:

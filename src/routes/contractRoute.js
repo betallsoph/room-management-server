@@ -27,7 +27,7 @@ const router = express.Router();
  *       403:
  *         description: Không có quyền
  */
-router.post('/', authenticateToken, authorize(['admin', 'staff']), contractController.createContract);
+router.post('/', authenticateToken, authorize(['admin']), contractController.createContract);
 
 /**
  * @swagger
@@ -44,7 +44,7 @@ router.post('/', authenticateToken, authorize(['admin', 'staff']), contractContr
  *       401:
  *         description: Chưa xác thực
  */
-router.get('/', authenticateToken, authorize(['admin', 'staff']), contractController.listContracts);
+router.get('/', authenticateToken, authorize(['admin']), contractController.listContracts);
 
 /**
  * @swagger

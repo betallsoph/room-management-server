@@ -12,7 +12,7 @@ const router = express.Router();
  *     security: [{bearerAuth: []}]
  *     responses: {201: {description: Gửi thành công}}
  */
-router.post('/', authenticateToken, authorize(['admin', 'staff']), notificationController.sendNotification);
+router.post('/', authenticateToken, authorize(['admin']), notificationController.sendNotification);
 
 /** @swagger
  * /api/notifications/sent/list:
@@ -22,7 +22,7 @@ router.post('/', authenticateToken, authorize(['admin', 'staff']), notificationC
  *     security: [{bearerAuth: []}]
  *     responses: {200: {description: Danh sách}}
  */
-router.get('/sent/list', authenticateToken, authorize(['admin', 'staff']), notificationController.listSentNotifications);
+router.get('/sent/list', authenticateToken, authorize(['admin']), notificationController.listSentNotifications);
 
 /** @swagger
  * /api/notifications/my/list:

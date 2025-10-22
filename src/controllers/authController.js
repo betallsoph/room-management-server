@@ -21,7 +21,7 @@ const signup = async (req, res) => {
       fullName,
       email,
       password,
-      role: role || 'student'
+      role: role || 'tenant'
     });
 
     const token = generateToken(newUser._id, newUser.role);

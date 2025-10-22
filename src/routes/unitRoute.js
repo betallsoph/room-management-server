@@ -62,7 +62,7 @@ const router = express.Router();
  *       403:
  *         description: Không có quyền
  */
-router.post('/', authenticateToken, authorize(['admin', 'staff']), unitController.createUnit);
+router.post('/', authenticateToken, authorize(['admin']), unitController.createUnit);
 
 /**
  * @swagger
@@ -115,7 +115,7 @@ router.post('/', authenticateToken, authorize(['admin', 'staff']), unitControlle
  *                 pagination:
  *                   type: object
  */
-router.get('/', authenticateToken, authorize(['admin', 'staff']), unitController.listUnits);
+router.get('/', authenticateToken, authorize(['admin']), unitController.listUnits);
 
 /**
  * @swagger
@@ -188,10 +188,10 @@ router.get('/', authenticateToken, authorize(['admin', 'staff']), unitController
  *       200:
  *         description: Danh sách phòng trống
  */
-router.get('/available/listing', authenticateToken, authorize(['admin', 'staff']), unitController.getAvailableUnitsForListing);
+router.get('/available/listing', authenticateToken, authorize(['admin']), unitController.getAvailableUnitsForListing);
 
 router.get('/:unitId', authenticateToken, unitController.getUnitDetails);
-router.put('/:unitId', authenticateToken, authorize(['admin', 'staff']), unitController.updateUnit);
+router.put('/:unitId', authenticateToken, authorize(['admin']), unitController.updateUnit);
 router.delete('/:unitId', authenticateToken, authorize(['admin']), unitController.deleteUnit);
 
 /**

@@ -22,7 +22,7 @@ router.post('/', authenticateToken, authorize(['tenant']), documentController.up
  *     security: [{bearerAuth: []}]
  *     responses: {200: {description: Danh sách}}
  */
-router.get('/', authenticateToken, authorize(['admin', 'staff']), documentController.listDocuments);
+router.get('/', authenticateToken, authorize(['admin']), documentController.listDocuments);
 
 /** @swagger
  * /api/documents/my/list:
@@ -65,7 +65,7 @@ router.get('/:documentId', authenticateToken, documentController.getDocumentDeta
  *     parameters: [{in: path, name: documentId, required: true, schema: {type: string}}]
  *     responses: {200: {description: Lưu trữ thành công}}
  */
-router.put('/:documentId/archive', authenticateToken, authorize(['admin', 'staff']), documentController.archiveDocument);
+router.put('/:documentId/archive', authenticateToken, authorize(['admin']), documentController.archiveDocument);
 
 /** @swagger
  * /api/documents/{documentId}:
@@ -87,6 +87,6 @@ router.delete('/:documentId', authenticateToken, authorize(['admin']), documentC
  *     parameters: [{in: path, name: documentId, required: true, schema: {type: string}}]
  *     responses: {200: {description: Chia sẻ thành công}}
  */
-router.put('/:documentId/share', authenticateToken, authorize(['admin', 'staff']), documentController.shareDocument);
+router.put('/:documentId/share', authenticateToken, authorize(['admin']), documentController.shareDocument);
 
 module.exports = router;

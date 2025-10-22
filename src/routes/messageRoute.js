@@ -53,7 +53,7 @@ router.get('/conversation/:conversationId', authenticateToken, messageController
  *     security: [{bearerAuth: []}]
  *     responses: {200: {description: Danh sách}}
  */
-router.get('/admin/all-messages', authenticateToken, authorize(['admin', 'staff']), messageController.adminViewAllMessages);
+router.get('/admin/all-messages', authenticateToken, authorize(['admin']), messageController.adminViewAllMessages);
 
 /** @swagger
  * /api/messages/{messageId}:

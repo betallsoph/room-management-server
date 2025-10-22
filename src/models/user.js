@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const roles = ['admin', 'staff', 'student'];
+const roles = ['admin', 'tenant'];
 
 const userSchema = new mongoose.Schema(
 	{
@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema(
 		role: {
 			type: String,
 			enum: roles,
-			default: 'student'
+			default: 'tenant'
 		},
 		isActive: {
 			type: Boolean,

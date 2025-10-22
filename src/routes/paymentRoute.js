@@ -12,7 +12,7 @@ const router = express.Router();
  *     security: [{bearerAuth: []}]
  *     responses: {201: {description: Thành công}}
  */
-router.post('/', authenticateToken, authorize(['admin', 'staff']), paymentController.recordPayment);
+router.post('/', authenticateToken, authorize(['admin']), paymentController.recordPayment);
 
 /** @swagger
  * /api/payments:
@@ -22,7 +22,7 @@ router.post('/', authenticateToken, authorize(['admin', 'staff']), paymentContro
  *     security: [{bearerAuth: []}]
  *     responses: {200: {description: Danh sách}}
  */
-router.get('/', authenticateToken, authorize(['admin', 'staff']), paymentController.listPayments);
+router.get('/', authenticateToken, authorize(['admin']), paymentController.listPayments);
 
 /** @swagger
  * /api/payments/my/history:
@@ -42,7 +42,7 @@ router.get('/my/history', authenticateToken, authorize(['tenant']), paymentContr
  *     security: [{bearerAuth: []}]
  *     responses: {200: {description: Tổng quan}}
  */
-router.get('/status/summary', authenticateToken, authorize(['admin', 'staff']), paymentController.getPaymentStatus);
+router.get('/status/summary', authenticateToken, authorize(['admin']), paymentController.getPaymentStatus);
 
 /** @swagger
  * /api/payments/{paymentId}:
@@ -63,6 +63,6 @@ router.get('/:paymentId', authenticateToken, paymentController.getPaymentDetails
  *     security: [{bearerAuth: []}]
  *     responses: {200: {description: Gửi thành công}}
  */
-router.post('/send-info', authenticateToken, authorize(['admin', 'staff']), paymentController.sendPaymentInfo);
+router.post('/send-info', authenticateToken, authorize(['admin']), paymentController.sendPaymentInfo);
 
 module.exports = router;

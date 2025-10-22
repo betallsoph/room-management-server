@@ -22,7 +22,7 @@ router.post('/', authenticateToken, authorize(['tenant']), maintenanceTicketCont
  *     security: [{bearerAuth: []}]
  *     responses: {200: {description: Danh sách}}
  */
-router.get('/', authenticateToken, authorize(['admin', 'staff']), maintenanceTicketController.listMaintenanceTickets);
+router.get('/', authenticateToken, authorize(['admin']), maintenanceTicketController.listMaintenanceTickets);
 
 /** @swagger
  * /api/maintenance-tickets/my/tickets:
@@ -54,7 +54,7 @@ router.get('/:ticketId', authenticateToken, maintenanceTicketController.getTicke
  *     parameters: [{in: path, name: ticketId, required: true, schema: {type: string}}]
  *     responses: {200: {description: Gán thành công}}
  */
-router.put('/:ticketId/assign', authenticateToken, authorize(['admin', 'staff']), maintenanceTicketController.assignTicket);
+router.put('/:ticketId/assign', authenticateToken, authorize(['admin']), maintenanceTicketController.assignTicket);
 
 /** @swagger
  * /api/maintenance-tickets/{ticketId}/status:
@@ -65,6 +65,6 @@ router.put('/:ticketId/assign', authenticateToken, authorize(['admin', 'staff'])
  *     parameters: [{in: path, name: ticketId, required: true, schema: {type: string}}]
  *     responses: {200: {description: Cập nhật thành công}}
  */
-router.put('/:ticketId/status', authenticateToken, authorize(['admin', 'staff']), maintenanceTicketController.updateTicketStatus);
+router.put('/:ticketId/status', authenticateToken, authorize(['admin']), maintenanceTicketController.updateTicketStatus);
 
 module.exports = router;

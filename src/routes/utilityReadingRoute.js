@@ -22,7 +22,7 @@ router.post('/', authenticateToken, authorize(['tenant']), utilityReadingControl
  *     security: [{bearerAuth: []}]
  *     responses: {200: {description: Danh sách}}
  */
-router.get('/', authenticateToken, authorize(['admin', 'staff']), utilityReadingController.listPendingReadings);
+router.get('/', authenticateToken, authorize(['admin']), utilityReadingController.listPendingReadings);
 
 /** @swagger
  * /api/utility-readings/my/history:
@@ -54,7 +54,7 @@ router.get('/:readingId', authenticateToken, utilityReadingController.getReading
  *     parameters: [{in: path, name: readingId, required: true, schema: {type: string}}]
  *     responses: {200: {description: Xác nhận thành công}}
  */
-router.put('/:readingId/verify', authenticateToken, authorize(['admin', 'staff']), utilityReadingController.verifyReading);
+router.put('/:readingId/verify', authenticateToken, authorize(['admin']), utilityReadingController.verifyReading);
 
 /** @swagger
  * /api/utility-readings/{readingId}/reject:
@@ -65,6 +65,6 @@ router.put('/:readingId/verify', authenticateToken, authorize(['admin', 'staff']
  *     parameters: [{in: path, name: readingId, required: true, schema: {type: string}}]
  *     responses: {200: {description: Từ chối thành công}}
  */
-router.put('/:readingId/reject', authenticateToken, authorize(['admin', 'staff']), utilityReadingController.rejectReading);
+router.put('/:readingId/reject', authenticateToken, authorize(['admin']), utilityReadingController.rejectReading);
 
 module.exports = router;
