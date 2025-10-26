@@ -123,17 +123,8 @@ exports.getTenantNotifications = async (req, res) => {
 
     const total = await Notification.countDocuments(filter);
 
-    // Separate important from regular
-    const importantNotifications = notifications.filter(n => 
-      ['payment-due', 'payment-received', 'invoice-issued', 'system-alert'].includes(n.notificationType)
-    );
-    const regularNotifications = notifications.filter(n => 
-      !['payment-due', 'payment-received', 'invoice-issued', 'system-alert'].includes(n.notificationType)
-    );
-
     res.json({
-      important: importantNotifications,
-      regular: regularNotifications,
+      notifications,
       pagination: {
         total,
         page: parseInt(page),

@@ -55,35 +55,53 @@ exports.createMaintenanceTicket = async (req, res) => {
 
     await ticket.save();
 
-    // Tạo notification cho chủ nhà
-    await Notification.create({
-      recipient: contract.landlord,
-      notificationType: 'maintenance-assigned',
-      title: `Báo cáo sự cố: ${title}`,
-      message: `Khách thuê báo cáo sự cố [${priority}]: ${description.substring(0, 100)}...`,
-      relatedEntity: {
-        entityType: 'maintenance-ticket',
-        entityId: ticket._id
-      },
-      actionUrl: `/maintenance-tickets/${ticket._id}`,
-      sendMethod: 'in-app'
-    });
+    // Tạo notification cho chủ nhà (nếu có)
+    try {
+      if (contract.landlord) {
+        await Notification.create({
+          recipient: contract.landlord,
+          notificationType: 'maintenance-assigned',
+          title: `Báo cáo sự cố: ${title}`,
+          message: `Khách thuê báo cáo sự cố [${priority}]: ${description.substring(0, 100)}...`,
+          relatedEntity: {
+            entityType: 'maintenance-ticket',
+            entityId: ticket._id
+          },
+          actionUrl: `/maintenance-tickets/${ticket._id}`,
+          sendMethod: 'in-app'
+        });
+      }
+    } catch (notifError) {
+      console.error('Error creating notification:', notifError.message);
+      // Continue even if notification fails
+    }
 
-    await ActivityLog.create({
-      user: req.user.id,
-      action: 'CREATE_MAINTENANCE_TICKET',
-      targetType: 'MaintenanceTicket',
-      targetId: ticket._id,
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent'),
-      details: `Báo cáo sự cố: ${title}`
-    });
+    try {
+      await ActivityLog.create({
+        adminId: req.user.id,
+        action: 'CREATE',
+        targetType: 'MAINTENANCE_TICKET',
+        targetId: ticket._id,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        details: {
+          ticketNumber: ticket.ticketNumber,
+          title: title,
+          category: category,
+          priority: priority || 'medium'
+        }
+      });
+    } catch (logError) {
+      console.error('Error creating activity log:', logError.message);
+      // Continue even if activity log fails
+    }
 
     res.status(201).json({
       message: 'Báo cáo sự cố được tạo thành công',
       ticket
     });
   } catch (error) {
+    console.error('Create maintenance ticket error:', error);
     res.status(500).json({ message: 'Lỗi tạo báo cáo sự cố', error: error.message });
   }
 };
@@ -91,26 +109,51 @@ exports.createMaintenanceTicket = async (req, res) => {
 // [Admin] Xem danh sách sự cố (có filter theo status, priority, building)
 exports.listMaintenanceTickets = async (req, res) => {
   try {
-    const { status, priority, building, page = 1, limit = 20 } = req.query;
+    const { status, priority, category, search, page = 1, limit = 20 } = req.query;
     const skip = (page - 1) * limit;
 
     const filter = {};
     if (status) filter.status = status;
     if (priority) filter.priority = priority;
+    if (category) filter.category = category;
 
     let tickets = await MaintenanceTicket.find(filter)
-      .populate('unit', 'unitNumber building')
-      .populate('tenant', 'identityCard')
+      .populate('unit', 'unitNumber building floor')
+      .populate({
+        path: 'tenant',
+        select: 'userId phone identityCard',
+        populate: {
+          path: 'userId',
+          select: 'fullName email phone'
+        }
+      })
+      .populate({
+        path: 'contract',
+        select: 'contractNumber'
+      })
       .populate('assignedTo', 'fullName email')
       .skip(skip)
       .limit(parseInt(limit))
       .sort({ priority: -1, createdAt: -1 });
 
-    if (building) {
-      tickets = tickets.filter(t => t.unit?.building === building);
+    // Filter by search (unit number)
+    if (search) {
+      tickets = tickets.filter(t => 
+        t.unit?.unitNumber?.toLowerCase().includes(search.toLowerCase())
+      );
     }
 
     const total = await MaintenanceTicket.countDocuments(filter);
+
+    // Get statistics for all tickets (not just filtered)
+    const statistics = {
+      total: await MaintenanceTicket.countDocuments(),
+      new: await MaintenanceTicket.countDocuments({ status: 'new' }),
+      assigned: await MaintenanceTicket.countDocuments({ status: 'assigned' }),
+      inProgress: await MaintenanceTicket.countDocuments({ status: 'in-progress' }),
+      completed: await MaintenanceTicket.countDocuments({ status: 'completed' }),
+      rejected: await MaintenanceTicket.countDocuments({ status: 'rejected' })
+    };
 
     res.json({
       tickets,
@@ -119,7 +162,8 @@ exports.listMaintenanceTickets = async (req, res) => {
         page: parseInt(page),
         limit: parseInt(limit),
         pages: Math.ceil(total / limit)
-      }
+      },
+      statistics
     });
   } catch (error) {
     res.status(500).json({ message: 'Lỗi lấy danh sách sự cố', error: error.message });
@@ -132,9 +176,19 @@ exports.getTicketDetails = async (req, res) => {
     const { ticketId } = req.params;
 
     const ticket = await MaintenanceTicket.findById(ticketId)
-      .populate('unit')
-      .populate('contract')
-      .populate('tenant', 'identityCard phone')
+      .populate('unit', 'unitNumber building floor roomType squareMeters')
+      .populate({
+        path: 'contract',
+        select: 'contractNumber startDate endDate'
+      })
+      .populate({
+        path: 'tenant',
+        select: 'userId phone identityCard',
+        populate: {
+          path: 'userId',
+          select: 'fullName email phone'
+        }
+      })
       .populate('assignedTo', 'fullName email phone')
       .populate('createdBy', 'fullName');
 
@@ -192,13 +246,16 @@ exports.assignTicket = async (req, res) => {
     });
 
     await ActivityLog.create({
-      user: req.user.id,
-      action: 'ASSIGN_TICKET',
-      targetType: 'MaintenanceTicket',
+      adminId: req.user.id,
+      action: 'ASSIGN',
+      targetType: 'MAINTENANCE_TICKET',
       targetId: ticket._id,
       ipAddress: req.ip,
       userAgent: req.get('user-agent'),
-      details: `Gán sự cố ${ticket.ticketNumber}`
+      details: {
+        ticketNumber: ticket.ticketNumber,
+        assignedTo: assignedTo
+      }
     });
 
     res.json({
@@ -214,56 +271,115 @@ exports.assignTicket = async (req, res) => {
 exports.updateTicketStatus = async (req, res) => {
   try {
     const { ticketId } = req.params;
-    const { status, notes, cost } = req.body;
+    const { 
+      status, 
+      notes, 
+      resolutionNotes,
+      cost, 
+      priority, 
+      category, 
+      title, 
+      description,
+      estimatedCompletionDate 
+    } = req.body;
 
     const ticket = await MaintenanceTicket.findById(ticketId);
     if (!ticket) {
       return res.status(404).json({ message: 'Sự cố không tồn tại' });
     }
 
+    // Update status
     if (status && ['new', 'assigned', 'in-progress', 'completed', 'rejected'].includes(status)) {
       ticket.status = status;
     }
 
+    // Update priority
+    if (priority && ['low', 'medium', 'high', 'urgent'].includes(priority)) {
+      ticket.priority = priority;
+    }
+
+    // Update category
+    if (category && ['plumbing', 'electrical', 'structural', 'appliance', 'ventilation', 'door-lock', 'paint', 'other'].includes(category)) {
+      ticket.category = category;
+    }
+
+    // Update other fields
+    if (title) ticket.title = title;
+    if (description) ticket.description = description;
     if (notes) ticket.notes = notes;
+    if (resolutionNotes) ticket.resolutionNotes = resolutionNotes;
     if (cost !== undefined) ticket.cost = cost;
+    if (estimatedCompletionDate) ticket.estimatedCompletionDate = estimatedCompletionDate;
 
     if (status === 'completed') {
-      ticket.actualCompletionDate = new Date();
+      ticket.resolvedAt = new Date();
     }
 
     await ticket.save();
 
     // Notification to tenant if completed
     if (status === 'completed') {
-      await Notification.create({
-        recipient: ticket.tenant,
-        notificationType: 'maintenance-completed',
-        title: `Sự cố được xử lý xong`,
-        message: `Báo cáo sự cố "${ticket.title}" đã được hoàn thành. Cảm ơn bạn đã chờ đợi!`,
-        relatedEntity: {
-          entityType: 'maintenance-ticket',
-          entityId: ticket._id
-        },
-        sendMethod: 'in-app'
-      });
+      try {
+        await Notification.create({
+          recipient: ticket.tenant,
+          notificationType: 'maintenance-completed',
+          title: `Sự cố được xử lý xong`,
+          message: `Báo cáo sự cố "${ticket.title}" đã được hoàn thành. Cảm ơn bạn đã chờ đợi!`,
+          relatedEntity: {
+            entityType: 'maintenance-ticket',
+            entityId: ticket._id
+          },
+          sendMethod: 'in-app'
+        });
+      } catch (notifError) {
+        console.error('Error creating notification:', notifError.message);
+        // Continue even if notification fails
+      }
     }
 
-    await ActivityLog.create({
-      user: req.user.id,
-      action: 'UPDATE_TICKET',
-      targetType: 'MaintenanceTicket',
-      targetId: ticket._id,
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent'),
-      details: `Cập nhật sự cố ${ticket.ticketNumber} thành ${status}`
-    });
+    try {
+      await ActivityLog.create({
+        adminId: req.user.id,
+        action: 'UPDATE',
+        targetType: 'MAINTENANCE_TICKET',
+        targetId: ticket._id,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        details: {
+          ticketNumber: ticket.ticketNumber,
+          oldStatus: ticket.status,
+          newStatus: status,
+          resolutionNotes: resolutionNotes || ''
+        }
+      });
+    } catch (logError) {
+      console.error('Error creating activity log:', logError.message);
+      // Continue even if activity log fails
+    }
+
+    // Populate ticket before returning
+    const populatedTicket = await MaintenanceTicket.findById(ticket._id)
+      .populate('unit', 'unitNumber building floor')
+      .populate({
+        path: 'tenant',
+        select: 'userId phone identityCard',
+        populate: {
+          path: 'userId',
+          select: 'fullName email phone'
+        }
+      })
+      .populate({
+        path: 'contract',
+        select: 'contractNumber'
+      })
+      .populate('assignedTo', 'fullName email');
 
     res.json({
       message: 'Cập nhật sự cố thành công',
-      ticket
+      ticket: populatedTicket
     });
   } catch (error) {
+    console.error('Update ticket status error:', error);
     res.status(500).json({ message: 'Lỗi cập nhật sự cố', error: error.message });
   }
 };

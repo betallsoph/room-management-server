@@ -103,12 +103,23 @@ exports.listContracts = async (req, res) => {
     const { status, building, page = 1, limit = 20 } = req.query;
     const skip = (page - 1) * limit;
 
-    const filter = { landlord: req.user.id };
+    // Admin có thể xem tất cả contracts, landlord chỉ xem của mình
+    const filter = {};
+    if (req.user.role !== 'admin') {
+      filter.landlord = req.user.id;
+    }
     if (status) filter.status = status;
 
     let contracts = await Contract.find(filter)
       .populate('unit', 'unitNumber building')
-      .populate('tenant', 'identityCard moveInDate')
+      .populate({
+        path: 'tenant',
+        select: 'identityCard moveInDate name',
+        populate: {
+          path: 'userId',
+          select: 'fullName email phoneNumber'
+        }
+      })
       .skip(skip)
       .limit(parseInt(limit))
       .sort({ createdAt: -1 });

@@ -74,6 +74,16 @@ const maintenanceTicketSchema = new mongoose.Schema(
       type: String,
       default: ''
     },
+    resolutionNotes: {
+      type: String,
+      default: ''
+      // Notes from admin when resolving the ticket
+    },
+    resolvedAt: {
+      type: Date,
+      default: null
+      // When the ticket was marked as completed
+    },
     createdAt: {
       type: Date,
       default: Date.now

@@ -19,7 +19,25 @@ const tenantSchema = new mongoose.Schema(
     },
     emergencyContact: {
       name: String,
-      phone: String
+      phone: String,
+      relationship: String
+    },
+    documents: {
+      identityCardFront: {
+        type: String,
+        default: null
+        // URL/path to front side of ID card
+      },
+      identityCardBack: {
+        type: String,
+        default: null
+        // URL/path to back side of ID card
+      },
+      vneidImage: {
+        type: String,
+        default: null
+        // URL/path to VNeID app screenshot
+      }
     },
     currentUnit: {
       type: mongoose.Schema.Types.ObjectId,

@@ -82,7 +82,17 @@ const updateUser = async (req, res) => {
 			return res.status(400).json({ message: 'Invalid user id' });
 		}
 
-		const updatedUser = await User.findByIdAndUpdate(id, req.body, {
+		// Only allow updating safe fields (prevent role/password injection)
+		const { fullName, phone, address, dateOfBirth, avatar } = req.body;
+		
+		const updateData = {};
+		if (fullName) updateData.fullName = fullName;
+		if (phone) updateData.phone = phone;
+		if (address !== undefined) updateData.address = address;
+		if (dateOfBirth) updateData.dateOfBirth = dateOfBirth;
+		if (avatar) updateData.avatar = avatar;
+
+		const updatedUser = await User.findByIdAndUpdate(id, updateData, {
 			new: true,
 			runValidators: true
 		});
@@ -121,10 +131,116 @@ const deleteUser = async (req, res) => {
 	}
 };
 
+// Get current user profile
+const getProfile = async (req, res) => {
+	try {
+		const userId = req.user.id;
+		
+		const user = await User.findById(userId).select('-password');
+		
+		if (!user) {
+			return sendNotFound(res, 'User not found');
+		}
+		
+		return res.json(user);
+	} catch (error) {
+		return sendServerError(res, error);
+	}
+};
+
+// Update current user profile
+const updateProfile = async (req, res) => {
+	try {
+		const userId = req.user.id;
+		const { fullName, phone, address, dateOfBirth, avatar } = req.body;
+		
+		const updateData = {};
+		if (fullName) updateData.fullName = fullName;
+		if (phone) updateData.phone = phone;
+		if (address !== undefined) updateData.address = address;
+		if (dateOfBirth) updateData.dateOfBirth = dateOfBirth;
+		if (avatar) updateData.avatar = avatar;
+		
+		const updatedUser = await User.findByIdAndUpdate(
+			userId,
+			updateData,
+			{ new: true, runValidators: true }
+		).select('-password');
+		
+		if (!updatedUser) {
+			return sendNotFound(res, 'User not found');
+		}
+		
+		return res.json({
+			message: 'Cập nhật thông tin thành công',
+			user: updatedUser
+		});
+	} catch (error) {
+		return sendServerError(res, error);
+	}
+};
+
+// Change password
+const changePassword = async (req, res) => {
+	try {
+		const userId = req.user.id;
+		const { currentPassword, newPassword } = req.body;
+		
+		if (!currentPassword || !newPassword) {
+			return res.status(400).json({ 
+				message: 'Vui lòng nhập đầy đủ thông tin' 
+			});
+		}
+		
+	if (newPassword.length < 6) {
+		return res.status(400).json({ 
+			message: 'Mật khẩu mới phải có ít nhất 6 ký tự' 
+		});
+	}
+	
+	// Need to explicitly select password field for comparison
+	const user = await User.findById(userId).select('+password');
+	
+	if (!user) {
+		return sendNotFound(res, 'User not found');
+	}
+	
+	// Debug: Check if password was loaded
+	if (!user.password) {
+		console.error('Password field not loaded for user:', userId);
+		return res.status(500).json({ 
+			message: 'Không thể xác thực mật khẩu. Vui lòng liên hệ admin.' 
+		});
+	}
+	
+	// Verify current password
+	const isMatch = await user.comparePassword(currentPassword);
+		
+		if (!isMatch) {
+			return res.status(401).json({ 
+				message: 'Mật khẩu hiện tại không đúng' 
+			});
+		}
+		
+		// Update password
+		user.password = newPassword;
+		await user.save();
+		
+		return res.json({
+			message: 'Đổi mật khẩu thành công'
+		});
+	} catch (error) {
+		return sendServerError(res, error);
+	}
+};
+
 module.exports = {
 	getUsers,
 	getUserById,
 	createUser,
 	updateUser,
-	deleteUser
+	deleteUser,
+	getProfile,
+	updateProfile,
+	changePassword
 };

@@ -7,6 +7,9 @@ const userRoutes = require('./routes/userRoute');
 const authRoutes = require('./routes/authRoute');
 const adminRoutes = require('./routes/adminRoute');
 
+// Dashboard route
+const dashboardRoutes = require('./routes/dashboardRoute');
+
 // New apartment/rental management routes
 const unitRoutes = require('./routes/unitRoute');
 const tenantRoutes = require('./routes/tenantRoute');
@@ -21,9 +24,13 @@ const messageRoutes = require('./routes/messageRoute');
 
 const app = express();
 
-// CORS Configuration for Vite Frontend
+// CORS Configuration - Allow multiple frontend ports
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Vite default port
+  origin: [
+    'http://localhost:3001', // Next.js default
+    'http://localhost:5173', // Vite default
+    process.env.FRONTEND_URL || 'http://localhost:3000'
+  ],
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -33,6 +40,10 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files (uploaded documents)
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Swagger API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
@@ -54,6 +65,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Apartment rental management routes
 app.use('/api/units', unitRoutes);

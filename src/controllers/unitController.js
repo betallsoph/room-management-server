@@ -38,6 +38,9 @@ exports.createUnit = async (req, res) => {
       details: `Tạo phòng ${unitNumber} tại ${building}`
     });
 
+    // Populate landlord info before returning
+    await unit.populate('landlord', 'fullName email');
+
     res.status(201).json({
       message: 'Phòng được tạo thành công',
       unit
@@ -53,15 +56,23 @@ exports.listUnits = async (req, res) => {
     const { building, status, floor, roomType, page = 1, limit = 20 } = req.query;
     const skip = (page - 1) * limit;
 
-    // Build filter
-    const filter = { landlord: req.user.id };
+    // Build filter - Admin có thể xem tất cả phòng
+    const filter = {};
     if (building) filter.building = building;
     if (status) filter.status = status;
     if (floor) filter.floor = parseInt(floor);
     if (roomType) filter.roomType = roomType;
 
     const units = await Unit.find(filter)
-      .populate('currentTenant', 'fullName email phone')
+      .populate('landlord', 'fullName email')
+      .populate({
+        path: 'currentTenant',
+        select: 'userId phone status',
+        populate: {
+          path: 'userId',
+          select: 'fullName email phone'
+        }
+      })
       .skip(skip)
       .limit(parseInt(limit))
       .sort({ building: 1, floor: 1, unitNumber: 1 });
@@ -107,7 +118,20 @@ exports.getUnitDetails = async (req, res) => {
 exports.updateUnit = async (req, res) => {
   try {
     const { unitId } = req.params;
-    const { rentPrice, depositAmount, squareMeters, amenities, images, status } = req.body;
+    const { 
+      unitNumber, 
+      building, 
+      floor, 
+      squareMeters, 
+      roomType, 
+      rentPrice, 
+      depositAmount, 
+      amenities, 
+      description, 
+      images, 
+      status,
+      currentTenant 
+    } = req.body;
 
     const unit = await Unit.findById(unitId);
     if (!unit) {
@@ -118,13 +142,24 @@ exports.updateUnit = async (req, res) => {
       return res.status(403).json({ message: 'Bạn không có quyền cập nhật phòng này' });
     }
 
-    if (rentPrice) unit.rentPrice = rentPrice;
-    if (depositAmount) unit.depositAmount = depositAmount;
+    // Update all editable fields
+    if (unitNumber) unit.unitNumber = unitNumber;
+    if (building) unit.building = building;
+    if (floor !== undefined) unit.floor = floor;
     if (squareMeters) unit.squareMeters = squareMeters;
+    if (roomType && ['studio', 'one-bedroom', 'two-bedroom', 'three-bedroom'].includes(roomType)) {
+      unit.roomType = roomType;
+    }
+    if (rentPrice !== undefined) unit.rentPrice = rentPrice;
+    if (depositAmount !== undefined) unit.depositAmount = depositAmount;
     if (amenities) unit.amenities = amenities;
+    if (description !== undefined) unit.description = description;
     if (images) unit.images = images;
-    if (status && ['available', 'occupied', 'maintenance'].includes(status)) {
+    if (status && ['available', 'occupied', 'maintenance', 'rented-out'].includes(status)) {
       unit.status = status;
+    }
+    if (currentTenant !== undefined) {
+      unit.currentTenant = currentTenant || null;
     }
 
     await unit.save();
@@ -138,6 +173,12 @@ exports.updateUnit = async (req, res) => {
       userAgent: req.get('user-agent'),
       details: `Cập nhật thông tin phòng ${unit.unitNumber}`
     });
+
+    // Populate relations before returning
+    await unit.populate('landlord', 'fullName email');
+    if (unit.currentTenant) {
+      await unit.populate('currentTenant', 'fullName email phone');
+    }
 
     res.json({
       message: 'Cập nhật phòng thành công',

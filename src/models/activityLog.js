@@ -9,12 +9,12 @@ const activityLogSchema = new mongoose.Schema(
     },
     action: {
       type: String,
-      enum: ['CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'CHANGE_ROLE', 'TOGGLE_STATUS'],
+      enum: ['CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'CHANGE_ROLE', 'TOGGLE_STATUS', 'ASSIGN', 'RESOLVE'],
       required: true
     },
     targetType: {
       type: String,
-      enum: ['USER', 'ROOM', 'BOOKING'],
+      enum: ['USER', 'ROOM', 'BOOKING', 'TENANT', 'INVOICE', 'MAINTENANCE_TICKET', 'CONTRACT', 'UNIT'],
       required: true
     },
     targetId: {

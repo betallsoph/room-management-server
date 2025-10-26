@@ -5,15 +5,14 @@ const unitSchema = new mongoose.Schema(
     unitNumber: {
       type: String,
       required: true,
-      unique: true,
       trim: true
-      // Format: "A101", "B205", v.v.
+      // Format: "101", "205", v.v.
     },
     building: {
       type: String,
       required: true,
       trim: true
-      // Ví dụ: "Tòa A", "Tòa B"
+      // Ví dụ: "A", "B", "C"
     },
     floor: {
       type: Number,
@@ -85,6 +84,7 @@ const unitSchema = new mongoose.Schema(
 );
 
 // Index
+unitSchema.index({ building: 1, unitNumber: 1 }, { unique: true }); // Compound unique index
 unitSchema.index({ building: 1, floor: 1 });
 unitSchema.index({ status: 1 });
 unitSchema.index({ landlord: 1 });

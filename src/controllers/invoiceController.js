@@ -1,5 +1,6 @@
 const Invoice = require('../models/invoice');
 const Contract = require('../models/contract');
+const Tenant = require('../models/tenant');
 const UtilityReading = require('../models/utilityReading');
 const ActivityLog = require('../models/activityLog');
 const Notification = require('../models/notification');
@@ -30,7 +31,8 @@ exports.createInvoice = async (req, res) => {
       return res.status(404).json({ message: 'Hợp đồng không tồn tại' });
     }
 
-    if (contractDoc.landlord.toString() !== req.user.id) {
+    // Allow admin to create invoice for any contract; landlords only for their own contracts
+    if (req.user.role !== 'admin' && contractDoc.landlord.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Bạn không có quyền tạo hóa đơn cho hợp đồng này' });
     }
 
@@ -89,29 +91,38 @@ exports.createInvoice = async (req, res) => {
 
     await invoice.save();
 
-    // Tạo notification cho khách thuê
-    await Notification.create({
-      recipient: contractDoc.tenant,
-      notificationType: 'invoice-issued',
-      title: `Hóa đơn tháng ${month}/${year}`,
-      message: `Hóa đơn của bạn cho tháng ${month}/${year} là ${totalAmount.toLocaleString('vi-VN')} VND`,
-      relatedEntity: {
-        entityType: 'invoice',
-        entityId: invoice._id
-      },
-      actionUrl: `/invoices/${invoice._id}`,
-      sendMethod: 'in-app'
-    });
+    // Tạo notification cho khách thuê (không chặn flow nếu lỗi)
+    try {
+      await Notification.create({
+        recipient: contractDoc.tenant,
+        notificationType: 'invoice-issued',
+        title: `Hóa đơn tháng ${month}/${year}`,
+        message: `Hóa đơn của bạn cho tháng ${month}/${year} là ${totalAmount.toLocaleString('vi-VN')} VND`,
+        relatedEntity: {
+          entityType: 'invoice',
+          entityId: invoice._id
+        },
+        actionUrl: `/invoices/${invoice._id}`,
+        sendMethod: 'in-app'
+      });
+    } catch (notifError) {
+      console.error('Error creating notification:', notifError.message);
+    }
 
-    await ActivityLog.create({
-      user: req.user.id,
-      action: 'CREATE_INVOICE',
-      targetType: 'Invoice',
-      targetId: invoice._id,
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent'),
-      details: `Tạo hóa đơn ${invoiceNumber}`
-    });
+    // Log activity (không chặn flow nếu lỗi)
+    try {
+      await ActivityLog.create({
+        user: req.user.id,
+        action: 'CREATE_INVOICE',
+        targetType: 'Invoice',
+        targetId: invoice._id,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        details: `Tạo hóa đơn ${invoiceNumber}`
+      });
+    } catch (logError) {
+      console.error('Error creating activity log:', logError.message);
+    }
 
     res.status(201).json({
       message: 'Hóa đơn được tạo thành công',
@@ -136,7 +147,14 @@ exports.listInvoices = async (req, res) => {
     let invoices = await Invoice.find(filter)
       .populate('contract')
       .populate('unit', 'unitNumber building')
-      .populate('tenant', 'identityCard')
+      .populate({
+        path: 'tenant',
+        select: 'identityCard name',
+        populate: {
+          path: 'userId',
+          select: 'fullName email phoneNumber'
+        }
+      })
       .skip(skip)
       .limit(parseInt(limit))
       .sort({ createdAt: -1 });
@@ -170,7 +188,14 @@ exports.getInvoiceDetails = async (req, res) => {
     const invoice = await Invoice.findById(invoiceId)
       .populate('contract')
       .populate('unit')
-      .populate('tenant');
+      .populate({
+        path: 'tenant',
+        select: 'identityCard name',
+        populate: {
+          path: 'userId',
+          select: 'fullName email phoneNumber'
+        }
+      });
 
     if (!invoice) {
       return res.status(404).json({ message: 'Hóa đơn không tồn tại' });
